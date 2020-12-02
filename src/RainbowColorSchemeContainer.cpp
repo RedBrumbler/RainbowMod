@@ -48,7 +48,6 @@ namespace RainbowMod
     void RainbowColorSchemeContainer::Update()
     {
         if (!enabled) return;
-
         if (Config.Sabers || Config.Notes || Config.Trails)
         {
             saberColorAHue = fmod(saberColorAHue+Config.SaberASpeed, 360.0f);
