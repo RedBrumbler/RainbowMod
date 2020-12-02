@@ -1,0 +1,479 @@
+#include "../include/main.hpp"
+#include "SettingsViewController.hpp"
+#include "RainbowManager.hpp"
+#include "RainbowColorSchemeContainer.hpp"
+
+#include "qosmetics/shared/QosmeticsColorSetting.hpp"
+
+#include "UnityEngine/Object.hpp"
+#include "UnityEngine/Transform.hpp"
+#include "UnityEngine/GameObject.hpp"
+#include "System/Action.hpp"
+#include "UnityEngine/Resources.hpp"
+#include "UnityEngine/Color.hpp"
+#include "UnityEngine/Material.hpp"
+#include "UnityEngine/Shader.hpp"
+#include "UnityEngine/Renderer.hpp"
+#include "UnityEngine/SceneManagement/Scene.hpp"
+#include "GlobalNamespace/GameNoteController.hpp"
+#include "GlobalNamespace/MaterialPropertyBlockController.hpp"
+#include "UnityEngine/MaterialPropertyBlock.hpp"
+#include "GlobalNamespace/NoteData.hpp"
+#include "UnityEngine/SpriteRenderer.hpp"
+#include "GlobalNamespace/ColorNoteVisuals.hpp"
+#include "GlobalNamespace/GameNoteController_GameNoteType.hpp"
+#include "GlobalNamespace/ColorType.hpp"
+#include "GlobalNamespace/ColorScheme.hpp"
+#include "GlobalNamespace/SimpleColorSO.hpp"
+#include "GlobalNamespace/DisappearingArrowController.hpp"
+#include "GlobalNamespace/ColorNoteVisuals.hpp"
+#include "GlobalNamespace/ObstacleController.hpp"
+#include "GlobalNamespace/StretchableObstacle.hpp"
+#include "GlobalNamespace/ParametricBoxFrameController.hpp"
+#include "GlobalNamespace/ColorManager.hpp"
+#include "GlobalNamespace/SaberModelController.hpp"
+#include "GlobalNamespace/SaberType.hpp"
+#include "GlobalNamespace/SaberTrail.hpp"
+#include "GlobalNamespace/SaberTrailRenderer.hpp"
+#include "GlobalNamespace/TubeBloomPrePassLight.hpp"
+#include "GlobalNamespace/LightSwitchEventEffect.hpp"
+#include "GlobalNamespace/SaberManager.hpp"
+#include "GlobalNamespace/TutorialController.hpp"
+#include "GlobalNamespace/ColorExtensions.hpp"
+#include "GlobalNamespace/Saber.hpp"
+
+#include "beatsaber-hook/shared/utils/utils.h"
+#include "beatsaber-hook/shared/utils/logging.hpp"
+#include "modloader/shared/modloader.hpp"
+#include "beatsaber-hook/shared/utils/il2cpp-functions.hpp"
+#include "beatsaber-hook/shared/utils/il2cpp-utils.hpp" 
+#include "beatsaber-hook/shared/utils/typedefs.h"
+#include "config.hpp"
+
+#include "questui/shared/QuestUI.hpp"
+#include "questui/shared/BeatSaberUI.hpp"
+
+#include "custom-types/shared/register.hpp"
+
+bool isInTutorial = false; 
+
+float saberAColorHue = 0;
+float saberBColorHue = 0;
+float environmentColor0Hue = 0;
+float environmentColor1Hue = 0;
+float obstaclesColorHue = 0;
+
+UnityEngine::Color saberAColor;
+UnityEngine::Color saberBColor;
+UnityEngine::Color environmentColor0;
+UnityEngine::Color environmentColor1;
+UnityEngine::Color obstaclesColor;
+
+GlobalNamespace::ColorScheme* scheme;
+GlobalNamespace::SimpleColorSO* simpleColorSO0 = nullptr;
+GlobalNamespace::SimpleColorSO* simpleColorSO1 = nullptr;
+
+std::map<GlobalNamespace::SaberModelController*, std::vector<UnityEngine::Material*>> sabersMaterials;
+Array<GlobalNamespace::ColorManager*>* colorManagers = nullptr;
+Array<GlobalNamespace::LightSwitchEventEffect*>* lightSwitchEventEffects = nullptr;
+
+GlobalNamespace::SaberModelController* SaberModelControllers[2];
+
+static ModInfo modInfo;
+
+const Logger& getLogger()
+{
+    static const Logger& logger(modInfo);
+    return logger;
+}
+
+UnityEngine::Color ColorFromHSV(float h, float s, float v){
+    return UnityEngine::Color::HSVToRGB(h / 360.0f, s, v);
+}
+
+UnityEngine::Color GetLinearColor(UnityEngine::Color color){
+    return color.get_linear();
+}
+
+/*
+void CacheSaberMaterials(Il2CppObject* saber){
+    std::vector<Il2CppObject*> materials; 
+    Il2CppClass* shaderClass = il2cpp_utils::GetClassFromName("UnityEngine", "Shader");
+    int glowID, bloomID;
+    il2cpp_utils::RunMethod(&glowID, shaderClass, "PropertyToID", il2cpp_utils::createcsstr("_Glow"));
+    il2cpp_utils::RunMethod(&bloomID, shaderClass, "PropertyToID", il2cpp_utils::createcsstr("_Bloom"));
+    Array<Il2CppObject*>* childTransforms;
+    il2cpp_utils::RunMethod(&childTransforms, saber, "GetComponentsInChildren", il2cpp_utils::GetSystemType("UnityEngine", "Transform"), false);
+    for (int i= 0; i< childTransforms->Length(); i++)
+    {
+        Array<Il2CppObject*>* renderers;
+        il2cpp_utils::RunMethod(&renderers, childTransforms->values[i], "GetComponentsInChildren", il2cpp_utils::GetSystemType("UnityEngine", "Renderer"), false);
+        for (int j = 0; j < renderers->Length(); j++)
+        {
+            Array<Il2CppObject*>* sharedMaterials;
+            il2cpp_utils::RunMethod(&sharedMaterials, renderers->values[j], "get_sharedMaterials");
+            for (int h = 0; h < sharedMaterials->Length(); h++)
+            {
+                Il2CppObject* material = sharedMaterials->values[h];
+                bool setColor = false;
+                bool hasGlow;
+                il2cpp_utils::RunMethod(&hasGlow, material, "HasProperty", glowID);
+                if (hasGlow)
+                {
+                    float glowFloat;
+                    il2cpp_utils::RunMethod(&glowFloat, material, "GetFloat", glowID);
+                    if (glowFloat > 0)
+                       setColor = true;
+                }
+                if (!setColor)
+                {
+                    bool hasBloom;
+                    il2cpp_utils::RunMethod(&hasBloom, material, "HasProperty", bloomID);
+                    if (hasBloom)
+                    {
+                        float bloomFloat;
+                        il2cpp_utils::RunMethod(&bloomFloat, material, "GetFloat", bloomID);
+                        if (bloomFloat > 0)
+                            setColor = true;
+                    }
+                }
+                if (setColor)
+                {
+                    materials.push_back(material); 
+                }
+            }
+        }
+    }
+    if(materials.size() > 0)
+        sabersMaterials[saber] = materials;
+}
+*/
+
+void SetSaberColor(GlobalNamespace::Saber* saber, UnityEngine::Color color){
+    Array<UnityEngine::Renderer*>* renderers = saber->get_gameObject()->GetComponentsInChildren<UnityEngine::Renderer*>();
+
+    for (int i = 0; i < renderers->Length(); i++)
+    {   
+        UnityEngine::Material* material = renderers->values[i]->get_material();
+        material->set_color(color);
+    }
+    /*
+    if(it == sabersMaterials.end())
+    {
+        CacheSaberMaterials(saber);
+    }
+    for (Il2CppObject* material : sabersMaterials[saber]) 
+    {
+        il2cpp_utils::RunMethod(material, "SetColor", il2cpp_utils::createcsstr("_Color"), color);
+    }
+    */
+}
+
+bool shaderWarmupFirst = true;
+int timer = 0;
+
+MAKE_HOOK_OFFSETLESS(SceneManager_SetActiveScene, bool, UnityEngine::SceneManagement::Scene scene)
+{
+    // on set active scene, set base colors onto the sabers
+    saberAColor = UnityEngine::Color(168.0f/255.0f, 32.0f/255.0f, 32.0f/255.0f, 1.0f); //RED
+    saberBColor = UnityEngine::Color(32.0f/255.0f, 100.0f/255.0f, 168.0f/255.0f, 1.0f); //BLUE
+    if (to_utf8(csstrtostr(scene.GetNameInternal(scene.get_handle()))) == "ShaderWarmup" && shaderWarmupFirst)
+    {
+
+        Qosmetics::QosmeticsColors::Init();
+        shaderWarmupFirst = false;
+    }
+    if (to_utf8(csstrtostr(scene.GetNameInternal(scene.get_handle()))) == "GameCore")
+    {
+        timer = 0;
+        Qosmetics::QosmeticsColors::GameCore();
+        if (scheme) free(scheme);
+        scheme = GlobalNamespace::ColorScheme::New_ctor(
+                                                        il2cpp_utils::createcsstr("RainbowMod"),
+                                                        il2cpp_utils::createcsstr("Rainbow Mod"),
+                                                        false,
+                                                        UnityEngine::Color::get_black(),
+                                                        UnityEngine::Color::get_black(),
+                                                        UnityEngine::Color::get_black(),
+                                                        UnityEngine::Color::get_black(),
+                                                        false,
+                                                        UnityEngine::Color::get_black(),
+                                                        UnityEngine::Color::get_black(),
+                                                        UnityEngine::Color::get_black()
+        );
+    }
+    Config.QSabers = getenv("qsabersenabled");
+    Config.Qbloqs = getenv("qnotesenabled");
+    Config.Qwalls = getenv("qwallsenabled");
+    return  SceneManager_SetActiveScene(scene);
+}
+
+MAKE_HOOK_OFFSETLESS(TutorialController_Start, void, GlobalNamespace::TutorialController* self){
+    // if in the tutorial, set the bool so it's known by the rest of the mod
+    TutorialController_Start(self);
+    isInTutorial = true;
+}
+
+MAKE_HOOK_OFFSETLESS(TutorialController_OnDestroy, void, GlobalNamespace::TutorialController* self){
+    // turn off the bool
+    TutorialController_OnDestroy(self);
+    isInTutorial = false;
+}
+
+MAKE_HOOK_OFFSETLESS(ColorManager_ColorForNoteType, UnityEngine::Color, GlobalNamespace::ColorManager* self, GlobalNamespace::GameNoteController_GameNoteType type){
+    // give our own colors to the thing that is requesting
+    if(Config.Notes){
+        return type.value == 0 ? saberAColor : saberBColor;
+    }
+    return ColorManager_ColorForNoteType(self, type);
+}
+
+MAKE_HOOK_OFFSETLESS(ColorManager_ColorForSaberType, UnityEngine::Color, GlobalNamespace::ColorManager* self, GlobalNamespace::SaberType type){
+    // give our own colors to the thing that's requesting
+    if(Config.Sabers){
+        return type.value == 0 ? saberAColor : saberBColor;
+    }
+    return ColorManager_ColorForSaberType(self, type);
+}
+
+MAKE_HOOK_OFFSETLESS(ColorManager_EffectsColorForSaberType, UnityEngine::Color, GlobalNamespace::ColorManager* self, GlobalNamespace::SaberType type){
+    // again, give our own colors to the thing that's requesting
+    if(Config.Sabers){
+        return type.value == 0 ? saberAColor : saberBColor;
+    }
+    return ColorManager_EffectsColorForSaberType(self, type);
+}
+
+MAKE_HOOK_OFFSETLESS(ColorManager_GetObstacleEffectColor, UnityEngine::Color, GlobalNamespace::ColorManager* self){
+    // I think we give colors to the thing that's requesting
+    if(Config.Walls){
+        return obstaclesColor;
+    }
+    return ColorManager_GetObstacleEffectColor(self);
+}
+
+MAKE_HOOK_OFFSETLESS(SaberManager_RefreshSabers, void, GlobalNamespace::SaberManager* self){
+    // On refresh sabers make a new colorSO, get all colorManagers and get all light switch events
+    colorManagers = UnityEngine::Resources::FindObjectsOfTypeAll<GlobalNamespace::ColorManager*>();//GetAllObjectsOfType("", "ColorManager");
+    lightSwitchEventEffects = UnityEngine::Resources::FindObjectsOfTypeAll<GlobalNamespace::LightSwitchEventEffect*>();
+    if(simpleColorSO0 == nullptr || simpleColorSO1 == nullptr){
+        simpleColorSO0 = UnityEngine::ScriptableObject::CreateInstance<GlobalNamespace::SimpleColorSO*>();
+        simpleColorSO1 = UnityEngine::ScriptableObject::CreateInstance<GlobalNamespace::SimpleColorSO*>();
+    }
+    SaberManager_RefreshSabers(self);
+}
+
+
+MAKE_HOOK_OFFSETLESS(SaberManager_Update, void, GlobalNamespace::SaberManager* self){
+    // on saber update
+    if (timer < 1000000) timer ++;
+    if(colorManagers != nullptr) { // if color managers is set
+        if(isInTutorial){ // if in the tutorial
+            if(colorManagers->Length() > 0){ // if there is a colorManager
+                GlobalNamespace::ColorManager* colorManager = (GlobalNamespace::ColorManager*)colorManagers->values[colorManagers->Length()-1]; // get the last one
+                scheme->saberAColor = colorManager->saberAColor->get_color();
+                scheme->saberBColor = colorManager->saberBColor->get_color();
+                scheme->environmentColor0 = colorManager->environmentColor0->get_color();
+                scheme->environmentColor1 = colorManager->environmentColor1->get_color();
+                scheme->obstaclesColor = colorManager->obstaclesColor->get_color();
+            }
+        }else { // if not in tutorial
+            if (!scheme) scheme = GlobalNamespace::ColorScheme::New_ctor(
+                                                                            il2cpp_utils::createcsstr("RainbowMod"),
+                                                                            il2cpp_utils::createcsstr("Rainbow Mod"),
+                                                                            false,
+                                                                            UnityEngine::Color::get_black(),
+                                                                            UnityEngine::Color::get_black(),
+                                                                            UnityEngine::Color::get_black(),
+                                                                            UnityEngine::Color::get_black(),
+                                                                            false,
+                                                                            UnityEngine::Color::get_black(),
+                                                                            UnityEngine::Color::get_black(),
+                                                                            UnityEngine::Color::get_black()
+                                                                        );
+            
+            saberAColorHue = fmod(saberAColorHue+Config.SaberASpeed, 360); // calculate new Left Hue
+            saberBColorHue = fmod(saberBColorHue+Config.SaberBSpeed, 360); // calculate new Right Hue
+            scheme->saberAColor = ColorFromHSV(saberAColorHue, 1.0f, 1.0f); // calculate new Left Color
+            scheme->saberBColor = ColorFromHSV(saberBColorHue, 1.0f, 1.0f); // calculate new Right Color
+
+            environmentColor0Hue = fmod(environmentColor0Hue+Config.LightASpeed, 360); // calculate new Left Light Hue
+            environmentColor1Hue = fmod(environmentColor1Hue+Config.LightBSpeed, 360); // calculate new Right Light Hue
+            scheme->environmentColor0 = ColorFromHSV(environmentColor0Hue, 1.0f, 1.0f); // calculate new Left Light color
+            scheme->environmentColor1 = ColorFromHSV(environmentColor1Hue, 1.0f, 1.0f); // calculate new Right Light Color
+
+            obstaclesColorHue = fmod(obstaclesColorHue + Config.WallsSpeed, 360); // calculate new Wall Hue
+            scheme->obstaclesColor = ColorFromHSV(obstaclesColorHue, 1.0f, 1.0f); // calculate new Wall Color
+
+            if (!(Config.QSabers || Config.Qbloqs || Config.Qwalls)) {
+                getLogger().info("No Qosmetics items were enabled, setting colors on default objects");
+                for (int i = 0; i < colorManagers->Length(); i++) { // run the colorsDidChange event on all the ColorManagers if they are not nullptr
+                    System::Action* colorsDidChangeEvent = colorManagers->values[i]->colorsDidChangeEvent;
+                    if(colorsDidChangeEvent != nullptr)
+                        colorsDidChangeEvent->Invoke();
+                }
+
+                if(Config.Trails){ // if we are doing trails
+                    for(int i = 0; i < 2; i++){
+                        UnityEngine::Color saberColor = i == 0 ? scheme->saberAColor : scheme->saberBColor;
+                        GlobalNamespace::SaberModelController* saberModelController = SaberModelControllers[i];
+                        GlobalNamespace::SaberTrail* saberWeaponTrail = saberModelController->saberTrail;
+                        saberWeaponTrail->color = GetLinearColor(saberColor);
+                        GlobalNamespace::TubeBloomPrePassLight* light = saberModelController->saberLight;
+                        light->set_color(saberColor);
+                    }
+                }
+                
+                if(Config.Sabers) {
+                    SetSaberColor(self->get_rightSaber(), scheme->saberBColor);
+                    SetSaberColor(self->get_leftSaber(), scheme->saberAColor);
+                }
+                
+            }
+            /*
+            else (timer > 1000000 && false) { // if there is 1 qosmetic type enabled
+                getLogger().info("There were qosmetics types enabled, setting colors on that");
+                if (Config.Walls && Config.Sabers && Config.Notes && Config.Trails)
+                {
+                    getLogger().info("setting entire color scheme");
+                    Qosmetics::QosmeticsColors::SetColorScheme(scheme);
+                }
+                else
+                {
+                    if (Config.Sabers && Config.Notes && Config.Trails)
+                    {
+                        getLogger().info("setting everything except Qwalls");
+                        Qosmetics::QosmeticsColors::SetLeftColor(scheme->saberAColor);
+                        Qosmetics::QosmeticsColors::SetRightColor(scheme->saberBColor);
+                    }
+                    else 
+                    {
+                        if (Config.Sabers && Config.QSabers)
+                        {
+                            getLogger().info("setting Qsabers");
+                            Qosmetics::QosmeticsColors::SetLeftSaberColor(scheme->saberAColor);
+                            Qosmetics::QosmeticsColors::SetRightSaberColor(scheme->saberBColor);
+                        }
+                        if (Config.Notes && Config.Qbloqs)
+                        {
+                            getLogger().info("setting Qbloqs");
+                            Qosmetics::QosmeticsColors::SetLeftSaberColor(scheme->saberAColor);
+                            Qosmetics::QosmeticsColors::SetRightSaberColor(scheme->saberBColor);
+                        }
+                        if (Config.Trails && Config.QSabers)
+                        {
+                            getLogger().info("setting Qtrail");
+                            Qosmetics::QosmeticsColors::SetLeftTrailColor(scheme->saberAColor);
+                            Qosmetics::QosmeticsColors::SetRightTrailColor(scheme->saberBColor);
+                        }
+                    }
+                    if (Config.Qwalls)
+                    {
+                        getLogger().info("setting Qwall");
+                        Qosmetics::QosmeticsColors::SetObstacleColor(scheme->obstaclesColor);
+                    }
+                }
+            }
+            */
+            if(Config.Lights){
+                    simpleColorSO0->SetColor(scheme->environmentColor0);
+                    simpleColorSO1->SetColor(scheme->environmentColor1);
+                    for (int i = 0; i < (lightSwitchEventEffects ? lightSwitchEventEffects->Length() : 0); i++) {
+                        GlobalNamespace::LightSwitchEventEffect* lightSwitchEventEffect = lightSwitchEventEffects->values[i];
+                        if(lightSwitchEventEffect != nullptr){
+                            lightSwitchEventEffect->lightColor0 = simpleColorSO0;
+                            lightSwitchEventEffect->lightColor1 = simpleColorSO1;
+                            lightSwitchEventEffect->highlightColor0 = simpleColorSO0;
+                            lightSwitchEventEffect->highlightColor1 = simpleColorSO1;
+                        }
+                    }
+                }
+        }
+    }
+    SaberManager_Update(self);
+}
+
+MAKE_HOOK_OFFSETLESS(SaberModelController_Init, void, GlobalNamespace::SaberModelController* self, UnityEngine::Transform* parent, GlobalNamespace::Saber* saber){
+    SaberModelControllers[saber->get_saberType().value] = self;
+    return SaberModelController_Init(self, parent, saber);
+}
+
+MAKE_HOOK_OFFSETLESS(GameNoteController_Update, void, GlobalNamespace::GameNoteController* self){
+    if(Config.Notes && !Config.Qbloqs){ // if we want note color updates
+    
+        GlobalNamespace::NoteData* noteData = self->noteData;
+        GlobalNamespace::GameNoteController_GameNoteType noteType = self->get_gameNoteType();
+
+        UnityEngine::Color noteColor = noteType.value == 0 ? scheme->saberAColor : scheme->saberBColor;
+        GlobalNamespace::ColorNoteVisuals* visuals = self->get_gameObject()->GetComponent<GlobalNamespace::ColorNoteVisuals*>();
+        if (!visuals) return;
+        visuals->noteColor = noteColor;
+        visuals->arrowGlowSpriteRenderer->set_color(GlobalNamespace::ColorExtensions::ColorWithAlpha(noteColor, visuals->arrowGlowIntensity));
+        visuals->circleGlowSpriteRenderer->set_color(noteColor); 
+        Array<GlobalNamespace::MaterialPropertyBlockController*>* materialPropertyBlockControllers = visuals->materialPropertyBlockControllers;
+        
+        for(int i = 0; i < materialPropertyBlockControllers->Length(); i++){
+            GlobalNamespace::MaterialPropertyBlockController* materialPropertyBlockController = materialPropertyBlockControllers->values[i];
+            UnityEngine::MaterialPropertyBlock* materialPropertyBlock = materialPropertyBlockController->get_materialPropertyBlock();
+            UnityEngine::Color materialPropertyBlockColor = noteColor;
+            materialPropertyBlockColor.a = 1.0f;
+            materialPropertyBlock->SetColor(il2cpp_utils::createcsstr("_Color"), GlobalNamespace::ColorExtensions::ColorWithAlpha(noteColor, 1.0f));
+            materialPropertyBlockController->ApplyChanges();
+        }
+        
+    }
+    GameNoteController_Update(self);
+}
+
+MAKE_HOOK_OFFSETLESS(ObstacleController_Update, void, GlobalNamespace::ObstacleController* self){
+    if(Config.Walls && !Config.Qwalls){
+
+        GlobalNamespace::StretchableObstacle* stretchableObstacle = self->stretchableObstacle;
+
+        GlobalNamespace::ParametricBoxFrameController* obstacleFrame = stretchableObstacle->obstacleFrame;
+        float width = obstacleFrame->width;
+        float height = obstacleFrame->height;
+        float length = obstacleFrame->length;
+
+        stretchableObstacle->SetSizeAndColor(width, height, length, scheme->obstaclesColor);
+    }
+    ObstacleController_Update(self);
+}
+
+extern "C" void setup(ModInfo& info)
+{
+    info.id = ID;
+    info.version = VERSION;
+
+    modInfo = info;
+}
+extern "C" void load()
+{
+    if(!LoadConfig())
+        SaveConfig();
+    saberBColorHue = Config.SabersStartDiff;
+    environmentColor1Hue = Config.LightsStartDiff;
+    il2cpp_functions::Init();
+    QuestUI::Init();
+    
+    getLogger().info("Starting RainbowMod installation...");
+
+    INSTALL_HOOK_OFFSETLESS(SceneManager_SetActiveScene, il2cpp_utils::FindMethodUnsafe("UnityEngine.SceneManagement", "SceneManager", "SetActiveScene", 1));
+    INSTALL_HOOK_OFFSETLESS(TutorialController_Start, il2cpp_utils::FindMethodUnsafe("", "TutorialController", "Start", 0));
+    INSTALL_HOOK_OFFSETLESS(TutorialController_OnDestroy, il2cpp_utils::FindMethodUnsafe("", "TutorialController", "OnDestroy", 0));
+    INSTALL_HOOK_OFFSETLESS(ColorManager_ColorForNoteType, il2cpp_utils::FindMethodUnsafe("", "ColorManager", "ColorForType", 1));
+    INSTALL_HOOK_OFFSETLESS(ColorManager_ColorForSaberType, il2cpp_utils::FindMethodUnsafe("", "ColorManager", "ColorForSaberType", 1));
+    INSTALL_HOOK_OFFSETLESS(ColorManager_EffectsColorForSaberType, il2cpp_utils::FindMethodUnsafe("", "ColorManager", "EffectsColorForSaberType", 1));
+    INSTALL_HOOK_OFFSETLESS(ColorManager_GetObstacleEffectColor, il2cpp_utils::FindMethodUnsafe("", "ColorManager", "GetObstacleEffectColor", 0));
+    INSTALL_HOOK_OFFSETLESS(SaberManager_RefreshSabers, il2cpp_utils::FindMethodUnsafe("", "SaberManager", "RefreshSabers", 0));
+    INSTALL_HOOK_OFFSETLESS(SaberManager_Update, il2cpp_utils::FindMethodUnsafe("", "SaberManager", "Update", 0));
+    INSTALL_HOOK_OFFSETLESS(SaberModelController_Init, il2cpp_utils::FindMethodUnsafe("", "SaberModelController", "Init", 2));
+    INSTALL_HOOK_OFFSETLESS(GameNoteController_Update, il2cpp_utils::FindMethodUnsafe("", "GameNoteController", "Update", 0));
+    INSTALL_HOOK_OFFSETLESS(ObstacleController_Update, il2cpp_utils::FindMethodUnsafe("", "ObstacleController", "Update", 0));
+    custom_types::Register::RegisterType<RainbowMod::SettingsViewController>();
+    custom_types::Register::RegisterType<RainbowMod::RainbowManager>();
+    custom_types::Register::RegisterType<RainbowMod::RainbowColorSchemeContainer>();
+    QuestUI::Register::RegisterModSettingsViewController<RainbowMod::SettingsViewController*>((ModInfo){"Rainbow Mod", VERSION}, "Rainbow Mod");
+
+    getLogger().info("Successfully installed RainbowMod!");
+}

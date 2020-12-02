@@ -9,3 +9,4 @@ if (-not ($PSVersionTable.PSEdition -eq "Core")) {
 & adb push libs/arm64-v8a/librainbowmod.so /sdcard/Android/data/com.beatgames.beatsaber/files/mods/librainbowmod.so
 & adb shell am force-stop com.beatgames.beatsaber
 & adb shell am start com.beatgames.beatsaber/com.unity3d.player.UnityPlayerActivity
+& adb logcat | Select-String "RainbowMod"

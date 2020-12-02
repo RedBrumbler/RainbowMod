@@ -20,34 +20,56 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := hook
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 include $(CLEAR_VARS)
-LOCAL_MODULE := beatsaber-hook_0_7_8
-LOCAL_EXPORT_C_INCLUDES := extern/beatsaber-hook
-LOCAL_SRC_FILES := extern/libbeatsaber-hook_0_7_8.so
-LOCAL_CPP_FEATURES += exceptions 
-include $(PREBUILT_SHARED_LIBRARY)
-# Creating prebuilt for dependency: modloader - version: 1.0.4
-include $(CLEAR_VARS)
 LOCAL_MODULE := modloader
 LOCAL_EXPORT_C_INCLUDES := extern/modloader
 LOCAL_SRC_FILES := extern/libmodloader.so
 include $(PREBUILT_SHARED_LIBRARY)
 # Creating prebuilt for dependency: codegen - version: 0.3.4
+# Creating prebuilt for dependency: codegen - version: 0.2.2
 include $(CLEAR_VARS)
-LOCAL_MODULE := codegen_0_3_4
+LOCAL_MODULE := codegen_0_4_0
 LOCAL_EXPORT_C_INCLUDES := extern/codegen
-LOCAL_SRC_FILES := extern/libcodegen_0_3_4.so
+LOCAL_SRC_FILES := extern/libcodegen_0_4_0.so
+LOCAL_CPP_FEATURES += rtti exceptions
+LOCAL_EXPORT_C_FLAGS := -Wno-inaccessible-base
+include $(PREBUILT_SHARED_LIBRARY)
+# Creating prebuilt for dependency: custom-types - version: 0.2.9
+include $(CLEAR_VARS)
+LOCAL_MODULE := custom-types
+LOCAL_EXPORT_C_INCLUDES := extern/custom-types
+LOCAL_SRC_FILES := extern/libcustom-types.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+# Creating prebuilt for dependency: beatsaber-hook - version: 0.5.7
+include $(CLEAR_VARS)
+LOCAL_MODULE := beatsaber-hook_0_8_4
+LOCAL_EXPORT_C_INCLUDES := extern/beatsaber-hook
+LOCAL_SRC_FILES := extern/libbeatsaber-hook_0_8_4.so
+LOCAL_CPP_FEATURES += rtti exceptions
+LOCAL_EXPORT_C_FLAGS := -DNEED_UNSAFE_CSHARP -Wno-inaccessible-base
+include $(PREBUILT_SHARED_LIBRARY)
+
+# Creating prebuilt for dependency: questui - version: 0.2.6
+include $(CLEAR_VARS)
+LOCAL_MODULE := questui
+LOCAL_EXPORT_C_INCLUDES := extern/questui
+LOCAL_CPP_FEATURES += rtti exceptions
+LOCAL_SRC_FILES := extern/libquestui.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 # If you would like to use more shared libraries (such as custom UI, utils, or more) add them here, following the format above. # In addition, ensure that you add them to the shared library build below. 
 include $(CLEAR_VARS) 
-LOCAL_MODULE := songloader_0_2_0
+LOCAL_MODULE := rainbowmod
 LOCAL_SRC_FILES += $(call rwildcard,src/**,*.cpp)
 LOCAL_SRC_FILES += $(call rwildcard,extern/beatsaber-hook/src/inline-hook,*.cpp)
 LOCAL_SRC_FILES += $(call rwildcard,extern/beatsaber-hook/src/inline-hook,*.c)
 LOCAL_SHARED_LIBRARIES += modloader
-LOCAL_SHARED_LIBRARIES += beatsaber-hook_0_7_8
-LOCAL_SHARED_LIBRARIES += codegen_0_3_4
+LOCAL_SHARED_LIBRARIES += beatsaber-hook_0_8_4
+LOCAL_SHARED_LIBRARIES += codegen_0_4_0
+LOCAL_SHARED_LIBRARIES += questui
+LOCAL_SHARED_LIBRARIES += custom-types
 LOCAL_LDLIBS += -llog 
-LOCAL_CFLAGS += -I"include" -I"shared" -I"./extern/libil2cpp/il2cpp/libil2cpp" -I"extern" -DVERSION='"0.2.0"'
+LOCAL_CPP_FEATURES += rtti exceptions
+LOCAL_CFLAGS += -I'D:/il2cpp/libil2cpp' -isystem 'extern' -I'extern/codegen/include' -DMODDEBUG='false' -DID='"RainbowMod"' -DVERSION='"0.2.0"' -I'./shared' -I'./extern' -Wno-inaccessible-base
 LOCAL_C_INCLUDES += ./include ./src 
 include $(BUILD_SHARED_LIBRARY)
