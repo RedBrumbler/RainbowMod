@@ -47,6 +47,9 @@ MAKE_HOOK_OFFSETLESS(SceneManager_SetActiveScene, bool, UnityEngine::SceneManage
     getLogger().info("Found scene %s", activeSceneName.c_str());
     if (activeSceneName == "GameCore")
     {
+        Config.QSabers = getenv("qsabersenabled");
+        Config.Qbloqs = getenv("qbloqsenabled");
+        Config.Qwalls = getenv("qwallsenabled");
         RainbowMod::RainbowColorSchemeContainer::SetDefaults();
         RainbowMod::RainbowManager::enabled = true;
         RainbowMod::RainbowColorSchemeContainer::enabled = true;
@@ -57,6 +60,16 @@ MAKE_HOOK_OFFSETLESS(SceneManager_SetActiveScene, bool, UnityEngine::SceneManage
         RainbowMod::RainbowColorSchemeContainer::enabled = false;
     }
     return SceneManager_SetActiveScene(scene);
+}
+
+MAKE_HOOK_OFFSETLESS(LightSwitchEventEffect_Start, void, GlobalNamespace::LightSwitchEventEffect* self)
+{
+    LightSwitchEventEffect_Start(self);
+    if (activeSceneName == "GameCore" && Config.Lights)
+    {
+        if (!self->get_gameObject()->GetComponent<RainbowMod::RainbowManager*>()) 
+                self->get_gameObject()->AddComponent<RainbowMod::RainbowManager*>();
+    }
 }
 
 MAKE_HOOK_OFFSETLESS(NoteDebris_Init, void, GlobalNamespace::NoteDebris* self, GlobalNamespace::ColorType colorType, UnityEngine::Vector3 notePos, UnityEngine::Quaternion noteRot, UnityEngine::Vector3 positionOffset, UnityEngine::Quaternion rotationOffset, UnityEngine::Vector3 cutPoint, UnityEngine::Vector3 cutNormal, UnityEngine::Vector3 force, UnityEngine::Vector3 torque, float lifeTime)
@@ -126,6 +139,7 @@ extern "C" void load()
     INSTALL_HOOK_OFFSETLESS(ObstacleController_Init, il2cpp_utils::FindMethodUnsafe("", "ObstacleController", "Init", 9));
     INSTALL_HOOK_OFFSETLESS(GameNoteController_Init, il2cpp_utils::FindMethodUnsafe("", "GameNoteController", "Init", 10));
     INSTALL_HOOK_OFFSETLESS(NoteDebris_Init, il2cpp_utils::FindMethodUnsafe("", "NoteDebris", "Init", 10));
+    INSTALL_HOOK_OFFSETLESS(LightSwitchEventEffect_Start, il2cpp_utils::FindMethodUnsafe("", "LightSwitchEventEffect", "Start", 0));
     //INSTALL_HOOK_OFFSETLESS(TutorialController_Start, il2cpp_utils::FindMethodUnsafe("", "TutorialController", "Start", 0));
     //INSTALL_HOOK_OFFSETLESS(TutorialController_OnDestroy, il2cpp_utils::FindMethodUnsafe("", "TutorialController", "OnDestroy", 0));
     //INSTALL_HOOK_OFFSETLESS(ColorManager_ColorForNoteType, il2cpp_utils::FindMethodUnsafe("", "ColorManager", "ColorForType", 1));
@@ -141,7 +155,6 @@ extern "C" void load()
     custom_types::Register::RegisterType<RainbowMod::RainbowColorSchemeContainer>();
     custom_types::Register::RegisterType<RainbowMod::RainbowManager>();
 
-    RainbowMod::RainbowColorSchemeContainer::SetDefaults();
     RainbowMod::RainbowManager::enabled = false;
     RainbowMod::RainbowColorSchemeContainer::enabled = false;
 

@@ -42,8 +42,24 @@ void RainbowMod::SettingsViewController::DidActivate(bool firstActivation, bool 
                 Config.Lights = value;
                 SaveConfig();
             }));
+        BeatSaberUI::CreateIncrementSetting(container->get_transform(), "Left Light Speed", 2, 0.2f, Config.LightASpeed, il2cpp_utils::MakeDelegate<UnityAction_1<float>*>(classof(UnityAction_1<float>*), this, +[](SettingsViewController* view, float value) {
+                Config.LightASpeed = value;
+                SaveConfig();
+            }));
+        BeatSaberUI::CreateIncrementSetting(container->get_transform(), "Right Light Speed", 2, 0.2f, Config.LightBSpeed, il2cpp_utils::MakeDelegate<UnityAction_1<float>*>(classof(UnityAction_1<float>*), this, +[](SettingsViewController* view, float value) {
+                Config.LightBSpeed = value;
+                SaveConfig();
+            }));
+        BeatSaberUI::CreateIncrementSetting(container->get_transform(), "Light Start Difference", 2, 5.0f, Config.LightsStartDiff, il2cpp_utils::MakeDelegate<UnityAction_1<float>*>(classof(UnityAction_1<float>*), this, +[](SettingsViewController* view, float value) {
+                Config.LightsStartDiff = value;
+                SaveConfig();
+            }));
         BeatSaberUI::CreateToggle(container->get_transform(), "Rainbow Walls", Config.Walls, il2cpp_utils::MakeDelegate<UnityAction_1<bool>*>(classof(UnityAction_1<bool>*), this, +[](SettingsViewController* view, bool value) { 
                 Config.Walls = value;
+                SaveConfig();
+            }));
+        BeatSaberUI::CreateIncrementSetting(container->get_transform(), "Wall Speed", 2, 0.2f, Config.WallsSpeed, il2cpp_utils::MakeDelegate<UnityAction_1<float>*>(classof(UnityAction_1<float>*), this, +[](SettingsViewController* view, float value) {
+                Config.WallsSpeed = value;
                 SaveConfig();
             }));
         BeatSaberUI::CreateToggle(container->get_transform(), "Rainbow Sabers", Config.Sabers, il2cpp_utils::MakeDelegate<UnityAction_1<bool>*>(classof(UnityAction_1<bool>*), this, +[](SettingsViewController* view, bool value) { 
@@ -58,10 +74,6 @@ void RainbowMod::SettingsViewController::DidActivate(bool firstActivation, bool 
                 Config.Notes = value;
                 SaveConfig();
             }));
-        BeatSaberUI::CreateToggle(container->get_transform(), "Rainbow Walls", Config.Walls, il2cpp_utils::MakeDelegate<UnityAction_1<bool>*>(classof(UnityAction_1<bool>*), this, +[](SettingsViewController* view, bool value) { 
-                Config.Walls = value;
-                SaveConfig();
-            }));
         BeatSaberUI::CreateIncrementSetting(container->get_transform(), "Left Saber Speed", 2, 0.2f, Config.SaberASpeed, il2cpp_utils::MakeDelegate<UnityAction_1<float>*>(classof(UnityAction_1<float>*), this, +[](SettingsViewController* view, float value) {
                 Config.SaberASpeed = value;
                 SaveConfig();
@@ -72,22 +84,6 @@ void RainbowMod::SettingsViewController::DidActivate(bool firstActivation, bool 
             }));
         BeatSaberUI::CreateIncrementSetting(container->get_transform(), "Saber Start Difference", 2, 5.0f, Config.SabersStartDiff, il2cpp_utils::MakeDelegate<UnityAction_1<float>*>(classof(UnityAction_1<float>*), this, +[](SettingsViewController* view, float value) {
                 Config.SabersStartDiff = value;
-                SaveConfig();
-            }));
-        BeatSaberUI::CreateIncrementSetting(container->get_transform(), "Left Light Speed", 2, 0.2f, Config.LightASpeed, il2cpp_utils::MakeDelegate<UnityAction_1<float>*>(classof(UnityAction_1<float>*), this, +[](SettingsViewController* view, float value) {
-                Config.LightASpeed = value;
-                SaveConfig();
-            }));
-        BeatSaberUI::CreateIncrementSetting(container->get_transform(), "Right Light Speed", 2, 0.2f, Config.LightBSpeed, il2cpp_utils::MakeDelegate<UnityAction_1<float>*>(classof(UnityAction_1<float>*), this, +[](SettingsViewController* view, float value) {
-                Config.LightBSpeed = value;
-                SaveConfig();
-            }));
-        BeatSaberUI::CreateIncrementSetting(container->get_transform(), "Light Start Difference", 2, 5.0f, Config.LightsStartDiff, il2cpp_utils::MakeDelegate<UnityAction_1<float>*>(classof(UnityAction_1<float>*), this, +[](SettingsViewController* view, float value) {
-                Config.LightsStartDiff = value;
-                SaveConfig();
-            }));
-        BeatSaberUI::CreateIncrementSetting(container->get_transform(), "Wall Speed", 2, 0.2f, Config.WallsSpeed, il2cpp_utils::MakeDelegate<UnityAction_1<float>*>(classof(UnityAction_1<float>*), this, +[](SettingsViewController* view, float value) {
-                Config.WallsSpeed = value;
                 SaveConfig();
             }));
     }

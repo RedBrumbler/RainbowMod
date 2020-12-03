@@ -15,8 +15,8 @@ bool RainbowMod::RainbowColorSchemeContainer::enabled = false;
 UnityEngine::Color RainbowMod::RainbowColorSchemeContainer::saberAColor;
 UnityEngine::Color RainbowMod::RainbowColorSchemeContainer::saberBColor;
 UnityEngine::Color RainbowMod::RainbowColorSchemeContainer::obstaclesColor;
-UnityEngine::Color RainbowMod::RainbowColorSchemeContainer::environmentColor0;
-UnityEngine::Color RainbowMod::RainbowColorSchemeContainer::environmentColor1;
+GlobalNamespace::SimpleColorSO* RainbowMod::RainbowColorSchemeContainer::environmentColor0SO;
+GlobalNamespace::SimpleColorSO* RainbowMod::RainbowColorSchemeContainer::environmentColor1SO;
 
 const Logger& getContainerLogger()
 {
@@ -36,8 +36,10 @@ namespace RainbowMod
         saberAColor = UnityEngine::Color(168.0f/255.0f, 32.0f/255.0f, 32.0f/255.0f, 1.0f); //RED
         saberBColor = UnityEngine::Color(32.0f/255.0f, 100.0f/255.0f, 168.0f/255.0f, 1.0f); //BLUE
         obstaclesColor = saberAColor;
-        environmentColor0 = saberAColor;
-        environmentColor1 = saberBColor;
+        environmentColor0SO = UnityEngine::ScriptableObject::CreateInstance<GlobalNamespace::SimpleColorSO*>();
+        environmentColor1SO = UnityEngine::ScriptableObject::CreateInstance<GlobalNamespace::SimpleColorSO*>();
+        environmentColor0SO->SetColor(saberAColor);
+        environmentColor1SO->SetColor(saberBColor);
     }
 
     void RainbowColorSchemeContainer::Awake()
@@ -68,8 +70,8 @@ namespace RainbowMod
             environmentColor0Hue = fmod(environmentColor0Hue+Config.LightASpeed, 360.0f);
             environmentColor1Hue = fmod(environmentColor1Hue+Config.LightBSpeed, 360.0f);
 
-            environmentColor0 = UnityEngine::Color::HSVToRGB(environmentColor0Hue / 360.0f, 1.0f, 1.0f);
-            environmentColor1 = UnityEngine::Color::HSVToRGB(environmentColor1Hue / 360.0f, 1.0f, 1.0f);
+            environmentColor0SO->SetColor(UnityEngine::Color::HSVToRGB(environmentColor0Hue / 360.0f, 1.0f, 1.0f));
+            environmentColor1SO->SetColor(UnityEngine::Color::HSVToRGB(environmentColor1Hue / 360.0f, 1.0f, 1.0f));
         }
     }
 
@@ -89,22 +91,6 @@ namespace RainbowMod
         }
     }
 
-    UnityEngine::Color RainbowColorSchemeContainer::GetLightColorForType(GlobalNamespace::ColorType type)
-    {
-        switch (type.value)
-        {
-            case 0:
-                return get_environmentColor0();
-                break;
-            case 1:
-                return get_environmentColor1();
-                break;
-            default:
-                return UnityEngine::Color::get_black();
-                break;
-        }
-    }
-
     UnityEngine::Color RainbowColorSchemeContainer::get_saberAColor()
     {
         return saberAColor;
@@ -115,14 +101,14 @@ namespace RainbowMod
         return saberBColor;
     }
 
-    UnityEngine::Color RainbowColorSchemeContainer::get_environmentColor0()
+    GlobalNamespace::SimpleColorSO* RainbowColorSchemeContainer::get_environmentColor0SO()
     {
-        return environmentColor0;
+        return environmentColor0SO;
     }
 
-    UnityEngine::Color RainbowColorSchemeContainer::get_environmentColor1()
+    GlobalNamespace::SimpleColorSO* RainbowColorSchemeContainer::get_environmentColor1SO()
     {
-        return environmentColor1;
+        return environmentColor1SO;
     }
 
     UnityEngine::Color RainbowColorSchemeContainer::get_obstaclesColor()
