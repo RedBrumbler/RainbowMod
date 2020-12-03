@@ -16,10 +16,10 @@
 		{
 			"Type": "HookMod",
 			"InstallAction": {
-				"InstallLibraryFile": "librainbowmod_0_3_0.so"
+				"InstallLibraryFile": "librainbowmod.so"
 			},
 			"UninstallAction": {
-				"RemoveLibraryFile": "librainbowmod_0_3_0.so"
+				"RemoveLibraryFile": "librainbowmod.so"
 			}
 		},
         {
