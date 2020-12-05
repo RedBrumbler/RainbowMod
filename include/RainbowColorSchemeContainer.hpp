@@ -5,10 +5,14 @@
 #include "GlobalNamespace/ColorType.hpp"
 #include "GlobalNamespace/ColorScheme.hpp"
 #include "GlobalNamespace/SimpleColorSO.hpp"
+#include "GlobalNamespace/ColorManager.hpp"
+
+
 
 DECLARE_CLASS_CODEGEN(RainbowMod, RainbowColorSchemeContainer, UnityEngine::MonoBehaviour,
     DECLARE_METHOD(void, Update);
     DECLARE_METHOD(void, Awake);
+    
     public: static void SetDefaults();
 
     DECLARE_METHOD(UnityEngine::Color, get_saberAColor);
@@ -17,8 +21,11 @@ DECLARE_CLASS_CODEGEN(RainbowMod, RainbowColorSchemeContainer, UnityEngine::Mono
     DECLARE_METHOD(GlobalNamespace::SimpleColorSO*, get_environmentColor1SO);
     DECLARE_METHOD(UnityEngine::Color, get_obstaclesColor);
 
+
+
     DECLARE_METHOD(UnityEngine::Color, GetSaberColorForType, GlobalNamespace::ColorType type);
 
+    DECLARE_STATIC_FIELD(Array<GlobalNamespace::ColorManager*>*, colorManagers);
     DECLARE_STATIC_FIELD(float, saberColorAHue);
     DECLARE_STATIC_FIELD(float, saberColorBHue);
     DECLARE_STATIC_FIELD(float, obstaclesColorHue);
@@ -30,6 +37,8 @@ DECLARE_CLASS_CODEGEN(RainbowMod, RainbowColorSchemeContainer, UnityEngine::Mono
     DECLARE_STATIC_FIELD(UnityEngine::Color, obstaclesColor);
     DECLARE_STATIC_FIELD(GlobalNamespace::SimpleColorSO*, environmentColor0SO);
     DECLARE_STATIC_FIELD(GlobalNamespace::SimpleColorSO*, environmentColor1SO);
+    DECLARE_STATIC_FIELD(GlobalNamespace::SimpleColorSO*, environmentBoost0SO);
+    DECLARE_STATIC_FIELD(GlobalNamespace::SimpleColorSO*, environmentBoost1SO);
 
     REGISTER_FUNCTION(RainbowColorSchemeContainer,
         REGISTER_METHOD(Update);
@@ -52,6 +61,8 @@ DECLARE_CLASS_CODEGEN(RainbowMod, RainbowColorSchemeContainer, UnityEngine::Mono
         REGISTER_FIELD(obstaclesColor);
         REGISTER_FIELD(environmentColor0SO);
         REGISTER_FIELD(environmentColor1SO);
+        REGISTER_FIELD(environmentBoost0SO);
+        REGISTER_FIELD(environmentBoost1SO);
         REGISTER_FIELD(enabled);
     )
 )

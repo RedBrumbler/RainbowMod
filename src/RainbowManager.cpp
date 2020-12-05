@@ -8,7 +8,6 @@
 #include "GlobalNamespace/StretchableObstacle.hpp"
 #include "GlobalNamespace/ParametricBoxFrameController.hpp"
 #include "GlobalNamespace/Saber.hpp"
-#include "GlobalNamespace/SaberTrail.hpp"
 #include "GlobalNamespace/SaberType.hpp"
 #include "GlobalNamespace/SetSaberFakeGlowColor.hpp"
 #include "GlobalNamespace/SetSaberGlowColor.hpp"
@@ -30,6 +29,21 @@ DEFINE_CLASS(RainbowMod::RainbowManager);
 
 RainbowMod::RainbowColorSchemeContainer* RainbowMod::RainbowManager::colorSchemeContainer = nullptr;
 bool RainbowMod::RainbowManager::enabled;
+Array<UnityEngine::Material*>* RainbowMod::RainbowManager::leftDot = nullptr;
+Array<UnityEngine::Material*>* RainbowMod::RainbowManager::leftArrow = nullptr;
+Array<UnityEngine::Material*>* RainbowMod::RainbowManager::rightDot = nullptr;
+Array<UnityEngine::Material*>* RainbowMod::RainbowManager::rightArrow = nullptr;
+Array<UnityEngine::Material*>* RainbowMod::RainbowManager::leftDebris = nullptr;
+Array<UnityEngine::Material*>* RainbowMod::RainbowManager::rightDebris = nullptr;
+
+bool RainbowMod::RainbowManager::cached00 = false;
+bool RainbowMod::RainbowManager::cached01 = false;
+bool RainbowMod::RainbowManager::cached10 = false;
+bool RainbowMod::RainbowManager::cached11 = false;
+bool RainbowMod::RainbowManager::cachedld = false;
+bool RainbowMod::RainbowManager::cachedrd = false;
+bool RainbowMod::RainbowManager::allCached = false;
+bool RainbowMod::RainbowManager::hasMaster = false;
 
 extern config_t Config;
 
@@ -78,12 +92,18 @@ namespace RainbowMod
             saberController = saber;
             this->managerType = 1;
             this->colorType = get_transform()->get_parent()->get_gameObject()->GetComponent<GlobalNamespace::Saber*>()->get_saberType().value;
+            this->saberTrails = nullptr;
         }
         else if (GlobalNamespace::GameNoteController* note = get_gameObject()->GetComponent<GlobalNamespace::GameNoteController*>())
         {
             noteController = note;
             this->managerType = 2;
             this->colorType = note->noteData->colorType.value;
+            if (!hasMaster) 
+            {
+                hasMaster = true;
+                isMaster = true;
+            }
         }
         else if (GlobalNamespace::ObstacleController* obstacle = get_gameObject()->GetComponent<GlobalNamespace::ObstacleController*>())
         {
@@ -95,11 +115,12 @@ namespace RainbowMod
         {
             noteDebris = debris;
             this->managerType = 4;
-        }
-        else if (GlobalNamespace::LightSwitchEventEffect* effect = get_gameObject()->GetComponent<GlobalNamespace::LightSwitchEventEffect*>())
-        {
-            lightEffect = effect;
-            this->managerType = 5;
+
+            if (!hasMaster) 
+            {
+                hasMaster = true;
+                isMaster = true;
+            }
         }
     }
 
@@ -120,20 +141,6 @@ namespace RainbowMod
             case 4:
                 SetDebrisColor();
                 break;
-            case 5:
-                SetLightEffectColor();
-                break;
-        }
-    }
-
-    void RainbowManager::SetLightEffectColor()
-    {
-        if (Config.Lights)
-        {
-            lightEffect->lightColor0 = colorSchemeContainer->get_environmentColor0SO();
-            lightEffect->lightColor1 = colorSchemeContainer->get_environmentColor1SO();
-            lightEffect->highlightColor0 = colorSchemeContainer->get_environmentColor0SO();
-            lightEffect->highlightColor1 = colorSchemeContainer->get_environmentColor1SO();
         }
     }
 
@@ -146,12 +153,14 @@ namespace RainbowMod
         }
         if (Config.Trails)
         {
-            Array<GlobalNamespace::SaberTrail*>* trails = GetComponentsInChildren<GlobalNamespace::SaberTrail*>();
-
-            if (trails)
-                for (int i = 0; i < trails->Length(); i++)
+            if (!this->saberTrails) saberTrails = get_transform()->get_parent()->get_gameObject()->GetComponentsInChildren<GlobalNamespace::SaberTrail*>();
+            //if (this->saberTrails && this->saberTrails->Length() == 0) get_transform()->get_parent()->get_gameObject()->GetComponentsInChildren<GlobalNamespace::SaberTrail*>();
+            //saberTrails = get_transform()->get_parent()->get_gameObject()->GetComponentsInChildren<GlobalNamespace::SaberTrail*>();
+            
+            if (this->saberTrails)
+                for (int i = 0; i < this->saberTrails->Length(); i++)
                 {
-                    trails->values[i]->color = theColor.get_linear();
+                    this->saberTrails->values[i]->color = theColor.get_linear();
                 }
         }
     }
@@ -208,11 +217,12 @@ namespace RainbowMod
             UnityEngine::Color theColor = colorSchemeContainer->GetSaberColorForType(this->colorType);
             if (Config.Qbloqs)
             {
-                SetColorOnRenderers(get_gameObject(), &ccmaterials);
+                SetColorOnDebrisRenderers(get_gameObject());
             }
             else
             {
                 noteDebris->materialPropertyBlockController->materialPropertyBlock->SetColor(GlobalNamespace::NoteDebris::_get__colorID(), theColor);
+                noteDebris->materialPropertyBlockController->ApplyChanges();
             }
         }
     }
@@ -228,7 +238,7 @@ namespace RainbowMod
             }
             else
             {
-                GlobalNamespace::ColorNoteVisuals* visuals = GetComponent<GlobalNamespace::ColorNoteVisuals*>();
+                GlobalNamespace::ColorNoteVisuals* visuals = get_gameObject()->GetComponent<GlobalNamespace::ColorNoteVisuals*>();
                 UnityEngine::Color arrowCol = theColor;
                 UnityEngine::Color restCol = theColor;
                 arrowCol.a = visuals->arrowGlowIntensity;
@@ -247,10 +257,12 @@ namespace RainbowMod
 
     void RainbowManager::SetWallColor()
     {
+        
         if (Config.Walls)
         {
             if (Config.Qwalls)
             {
+                getManagerLogger().info("Logging walls getting their color set because hammer is being a dumdum and wants it");
                 SetColorOnRenderers(get_gameObject(), &ccmaterials);
             }
             else
@@ -317,6 +329,16 @@ namespace RainbowMod
         {
             UnityEngine::Color theColor = colorSchemeContainer->GetSaberColorForType(this->colorType);
             noteDebris->materialPropertyBlockController->materialPropertyBlock->SetColor(GlobalNamespace::NoteDebris::_get__colorID(), theColor);
+            noteDebris->materialPropertyBlockController->ApplyChanges();
+            switch (this->colorType)
+            {
+                case 0:
+                    cachedld = true;
+                    break;
+                case 1:
+                    cachedrd = true;
+                    break;
+            }
             return;
         }
 
@@ -459,38 +481,132 @@ namespace RainbowMod
     {
         if (cached) 
         {
-            if (!cache) return;
-            if (!*cache) return;
-            int type1 = noteController ? noteController->noteData->colorType : this->colorType;
-            UnityEngine::Color theColor = colorSchemeContainer->GetSaberColorForType(type1);
-            UnityEngine::Color theOtherColor = colorSchemeContainer->GetSaberColorForType(1 - type1);
-             
-            for (int i = 0; i < (*cache)->Length(); i++)
+            if (noteController || noteDebris)
             {
-                (*cache)->values[i]->SetColor(colorID, theColor);
-                if ((*cache)->values[i]->HasProperty(otherColorID)) (*cache)->values[i]->SetColor(otherColorID, theOtherColor);
+                if (!isMaster) return;
+
+                UnityEngine::Color leftColor = colorSchemeContainer->GetSaberColorForType(0);
+                UnityEngine::Color rightColor = colorSchemeContainer->GetSaberColorForType(1);
+
+                if (cached00 && leftArrow) // left arrow
+                {
+                    for (int i = 0; i < leftArrow->Length(); i++)
+                    {
+                        leftArrow->values[i]->SetColor(colorID, leftColor);
+                        if (leftArrow->values[i]->HasProperty(otherColorID)) leftArrow->values[i]->SetColor(otherColorID, rightColor);
+                    }
+                }
+
+                if (cached01 && leftDot) // left dot
+                {
+                    for (int i = 0; i < leftDot->Length(); i++)
+                    {
+                        leftDot->values[i]->SetColor(colorID, leftColor);
+                        if (leftDot->values[i]->HasProperty(otherColorID)) leftDot->values[i]->SetColor(otherColorID, rightColor);
+                    }
+                }
+
+                if (cached10 && rightArrow) // right arrow
+                {
+                    for (int i = 0; i < rightArrow->Length(); i++)
+                    {
+                        rightArrow->values[i]->SetColor(colorID, rightColor);
+                        if (rightArrow->values[i]->HasProperty(otherColorID)) rightArrow->values[i]->SetColor(otherColorID, leftColor);
+                    }
+                }
+
+                if (cached11 && rightDot) // right dot
+                {
+                    for (int i = 0; i < rightDot->Length(); i++)
+                    {
+                        rightDot->values[i]->SetColor(colorID, rightColor);
+                        if (rightDot->values[i]->HasProperty(otherColorID)) rightDot->values[i]->SetColor(otherColorID, leftColor);
+                    }
+                }
+
+                if (cachedld && leftDebris)
+                {
+                    for (int i = 0; i < leftDebris->Length(); i++)
+                    {
+                        leftDebris->values[i]->SetColor(colorID, leftColor);
+                        if (leftDebris->values[i]->HasProperty(otherColorID)) leftDebris->values[i]->SetColor(otherColorID, rightColor);
+                    }
+                }
+
+                if (cachedrd && rightDebris)
+                {
+                    for (int i = 0; i < leftDebris->Length(); i++)
+                    {
+                        leftDebris->values[i]->SetColor(colorID, rightColor);
+                        if (leftDebris->values[i]->HasProperty(otherColorID)) leftDebris->values[i]->SetColor(otherColorID, leftColor);
+                    }
+                }
+                return;
             }
-            return;
+            else
+            {
+                if (!cache) return;
+                if (!*cache) return;
+                int type1 = noteController ? noteController->noteData->colorType : this->colorType;
+                UnityEngine::Color theColor = colorSchemeContainer->GetSaberColorForType(type1);
+                UnityEngine::Color theOtherColor = colorSchemeContainer->GetSaberColorForType(1 - type1);
+
+                for (int i = 0; i < (*cache)->Length(); i++)
+                {
+                    (*cache)->values[i]->SetColor(colorID, theColor);
+                    if ((*cache)->values[i]->HasProperty(otherColorID)) (*cache)->values[i]->SetColor(otherColorID, theOtherColor);
+                }
+                return;
+            }
         }
         else
         {
             std::vector<UnityEngine::Material*> ccmats;
             Array<UnityEngine::Renderer*>* renderers = obj->GetComponentsInChildren<UnityEngine::Renderer*>();
-
-            for (int i = 0; i < renderers->Length(); i++)
+            if (renderers)
             {
-                Array<UnityEngine::Material*>* materials = renderers->values[i]->get_sharedMaterials();
-                for (int j = 0; j < materials->Length(); j++)
+                for (int i = 0; i < renderers->Length(); i++)
                 {
-                    if (materials->values[j] == nullptr) continue;
-                    else if (ShouldCCMaterial(materials->values[j])) 
-                                ccmats.push_back(materials->values[j]);
+                    Array<UnityEngine::Material*>* materials = renderers->values[i]->get_sharedMaterials();
+                    if (!materials) continue;
+                    for (int j = 0; j < materials->Length(); j++)
+                    {
+                        if (materials->values[j] == nullptr) continue;
+                        else if (ShouldCCMaterial(materials->values[j])) 
+                                    ccmats.push_back(materials->values[j]);
+                    }
                 }
             }
-
             (*cache) = il2cpp_utils::vectorToArray(ccmats);
+            getManagerLogger().info("cache pointer %p", (*cache));
             cached = true;
             SetColorOnRenderers(obj, cache);
         }
+    }
+
+    void RainbowManager::ResetCaches()
+    {
+        leftDot = nullptr;
+        leftArrow = nullptr;
+        rightDot = nullptr;
+        rightArrow = nullptr;
+        leftDebris = nullptr;
+        rightDebris = nullptr;
+
+        cached00 = false;
+        cached01 = false;
+        cached10 = false;
+        cached11 = false;
+        cachedld = false;
+        cachedrd = false;
+
+        allCached = false;
+        hasMaster = false;
+        
+    }
+
+    void RainbowManager::OnDestroy()
+    {
+        if (isMaster) hasMaster = false;
     }
 }

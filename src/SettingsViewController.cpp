@@ -54,6 +54,14 @@ void RainbowMod::SettingsViewController::DidActivate(bool firstActivation, bool 
                 Config.LightsStartDiff = value;
                 SaveConfig();
             }));
+        BeatSaberUI::CreateIncrementSetting(container->get_transform(), "Boost Color Value", 2, 0.05f, Config.BoostValue, il2cpp_utils::MakeDelegate<UnityAction_1<float>*>(classof(UnityAction_1<float>*), this, +[](SettingsViewController* view, float value) {
+                Config.BoostValue = value;
+                SaveConfig();
+            }));
+        BeatSaberUI::CreateIncrementSetting(container->get_transform(), "Boost Color Saturation", 2, 0.05f, Config.BoostSaturation, il2cpp_utils::MakeDelegate<UnityAction_1<float>*>(classof(UnityAction_1<float>*), this, +[](SettingsViewController* view, float value) {
+                Config.BoostSaturation = value;
+                SaveConfig();
+            }));
         BeatSaberUI::CreateToggle(container->get_transform(), "Rainbow Walls", Config.Walls, il2cpp_utils::MakeDelegate<UnityAction_1<bool>*>(classof(UnityAction_1<bool>*), this, +[](SettingsViewController* view, bool value) { 
                 Config.Walls = value;
                 SaveConfig();

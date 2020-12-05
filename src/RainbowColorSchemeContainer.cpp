@@ -1,9 +1,13 @@
 #include "RainbowColorSchemeContainer.hpp"
 #include "UnityEngine/ScriptableObject.hpp"
+#include "UnityEngine/Resources.hpp"
+#include "System/Action.hpp"
 #include "config.hpp"
 
 DEFINE_CLASS(RainbowMod::RainbowColorSchemeContainer);
 extern config_t Config;
+
+Array<GlobalNamespace::ColorManager*>* RainbowMod::RainbowColorSchemeContainer::colorManagers;
 
 float RainbowMod::RainbowColorSchemeContainer::saberColorAHue = 0.0f;
 float RainbowMod::RainbowColorSchemeContainer::saberColorBHue = Config.SabersStartDiff;
@@ -17,6 +21,8 @@ UnityEngine::Color RainbowMod::RainbowColorSchemeContainer::saberBColor;
 UnityEngine::Color RainbowMod::RainbowColorSchemeContainer::obstaclesColor;
 GlobalNamespace::SimpleColorSO* RainbowMod::RainbowColorSchemeContainer::environmentColor0SO;
 GlobalNamespace::SimpleColorSO* RainbowMod::RainbowColorSchemeContainer::environmentColor1SO;
+GlobalNamespace::SimpleColorSO* RainbowMod::RainbowColorSchemeContainer::environmentBoost0SO;
+GlobalNamespace::SimpleColorSO* RainbowMod::RainbowColorSchemeContainer::environmentBoost1SO;
 
 const Logger& getContainerLogger()
 {
@@ -38,8 +44,20 @@ namespace RainbowMod
         obstaclesColor = saberAColor;
         environmentColor0SO = UnityEngine::ScriptableObject::CreateInstance<GlobalNamespace::SimpleColorSO*>();
         environmentColor1SO = UnityEngine::ScriptableObject::CreateInstance<GlobalNamespace::SimpleColorSO*>();
+        environmentBoost0SO = UnityEngine::ScriptableObject::CreateInstance<GlobalNamespace::SimpleColorSO*>();
+        environmentBoost1SO = UnityEngine::ScriptableObject::CreateInstance<GlobalNamespace::SimpleColorSO*>();
         environmentColor0SO->SetColor(saberAColor);
         environmentColor1SO->SetColor(saberBColor);
+
+        float h;
+        float s;
+        float v;
+        UnityEngine::Color::RGBToHSV(saberAColor, h, s, v);
+        environmentBoost0SO->SetColor(UnityEngine::Color::HSVToRGB(h, Config.BoostSaturation, Config.BoostValue));
+
+        UnityEngine::Color::RGBToHSV(saberAColor, h, s, v);
+        environmentBoost1SO->SetColor(UnityEngine::Color::HSVToRGB(h, Config.BoostSaturation, Config.BoostValue));
+        
     }
 
     void RainbowColorSchemeContainer::Awake()
@@ -50,6 +68,7 @@ namespace RainbowMod
     void RainbowColorSchemeContainer::Update()
     {
         if (!enabled) return;
+        
         if (Config.Sabers || Config.Notes || Config.Trails)
         {
             saberColorAHue = fmod(saberColorAHue+Config.SaberASpeed, 360.0f);
@@ -72,6 +91,32 @@ namespace RainbowMod
 
             environmentColor0SO->SetColor(UnityEngine::Color::HSVToRGB(environmentColor0Hue / 360.0f, 1.0f, 1.0f));
             environmentColor1SO->SetColor(UnityEngine::Color::HSVToRGB(environmentColor1Hue / 360.0f, 1.0f, 1.0f));
+
+            environmentBoost0SO->SetColor(UnityEngine::Color::HSVToRGB(environmentColor0Hue / 360.0f, Config.BoostSaturation, Config.BoostValue));
+            environmentBoost1SO->SetColor(UnityEngine::Color::HSVToRGB(environmentColor1Hue / 360.0f, Config.BoostSaturation, Config.BoostValue));
+        }
+        if (Config.Sabers || Config.Notes || Config.Trails || Config.Walls || Config.Lights)
+        {
+            colorManagers = UnityEngine::Object::FindObjectsOfType<GlobalNamespace::ColorManager*>();
+            for (int i = 0; i < colorManagers->Length(); i++)
+            {
+                if ((Config.Sabers || Config.Notes || Config.Trails) && false)
+                {
+                    colorManagers->values[i]->saberAColor->SetColor(saberAColor);
+                    colorManagers->values[i]->saberBColor->SetColor(saberBColor);
+                }
+                if (Config.Walls && false)
+                {
+                    colorManagers->values[i]->obstaclesColor->SetColor(obstaclesColor);
+                }
+                if (Config.Lights && false)
+                {
+                    colorManagers->values[i]->environmentColor0->SetColor(environmentColor0SO->get_color());
+                    colorManagers->values[i]->environmentColor1->SetColor(environmentColor1SO->get_color());
+                    colorManagers->values[i]->environmentColor0Boost->SetColor(environmentBoost0SO->get_color());
+                    colorManagers->values[i]->environmentColor1Boost->SetColor(environmentBoost1SO->get_color());
+                }
+            }
         }
     }
 

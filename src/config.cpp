@@ -26,6 +26,8 @@ void SaveConfig() {
     getConfig().config.AddMember("LightASpeed", Config.LightASpeed, allocator);
     getConfig().config.AddMember("LightBSpeed", Config.LightBSpeed, allocator);
     getConfig().config.AddMember("LightsStartDiff", Config.LightsStartDiff, allocator);
+    getConfig().config.AddMember("BoostValue", Config.BoostValue, allocator);
+    getConfig().config.AddMember("BoostSaturation", Config.BoostSaturation, allocator);
     getConfig().config.AddMember("WallsSpeed", Config.WallsSpeed, allocator);
     getConfig().Write();
     getLogger().info("Saved Configuration!");
@@ -87,6 +89,16 @@ bool LoadConfig() {
     }
     if(getConfig().config.HasMember("LightBSpeed") && getConfig().config["LightBSpeed"].IsDouble()){
         Config.LightBSpeed = getConfig().config["LightBSpeed"].GetDouble();    
+    }else{
+        foundEverything = false;
+    }
+    if(getConfig().config.HasMember("BoostValue") && getConfig().config["BoostValue"].IsDouble()){
+        Config.BoostValue = getConfig().config["BoostValue"].GetDouble();    
+    }else{
+        foundEverything = false;
+    }
+    if(getConfig().config.HasMember("BoostSaturation") && getConfig().config["BoostSaturation"].IsDouble()){
+        Config.BoostSaturation = getConfig().config["BoostSaturation"].GetDouble();    
     }else{
         foundEverything = false;
     }
