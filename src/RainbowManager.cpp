@@ -49,7 +49,7 @@ extern config_t Config;
 
 bool IDinited = false;
 int colorID, otherColorID, bloomID, glowID, customColorID;
-
+static int colorMod = 0;
 const Logger& getManagerLogger()
 {
     static const Logger logger((ModInfo){"RainbowModManager", "0.0.1"});
@@ -99,11 +99,6 @@ namespace RainbowMod
             noteController = note;
             this->managerType = 2;
             this->colorType = note->noteData->colorType.value;
-            if (!hasMaster) 
-            {
-                hasMaster = true;
-                isMaster = true;
-            }
         }
         else if (GlobalNamespace::ObstacleController* obstacle = get_gameObject()->GetComponent<GlobalNamespace::ObstacleController*>())
         {
@@ -127,6 +122,21 @@ namespace RainbowMod
     void RainbowManager::Update()
     {
         if (!enabled) return;
+
+        if (Config.RainbowSetMod > 1)
+        {
+            colorMod ++;
+            colorMod %= Config.RainbowSetMod;
+            if (colorMod != 0) return;
+        }
+
+
+        if ((noteDebris || noteController) && !hasMaster)
+        {
+            isMaster = true;
+            hasMaster = true;
+        }
+
         switch (this->managerType)
         {
             case 1: // saber
@@ -277,7 +287,10 @@ namespace RainbowMod
 
     bool RainbowManager::ShouldCCMaterial(UnityEngine::Material* mat)
     {
+        if (!mat->HasProperty(colorID) && !mat->HasProperty(otherColorID)) return false; // if the material does not have a color property, there is no use in checking if it should CC
         std::string matName = to_utf8(csstrtostr(mat->get_name()));
+        
+
         getManagerLogger().info("checking material %s", matName.c_str());
         if (mat->HasProperty(customColorID))
         {
@@ -535,10 +548,10 @@ namespace RainbowMod
 
                 if (cachedrd && rightDebris)
                 {
-                    for (int i = 0; i < leftDebris->Length(); i++)
+                    for (int i = 0; i < rightDebris->Length(); i++)
                     {
-                        leftDebris->values[i]->SetColor(colorID, rightColor);
-                        if (leftDebris->values[i]->HasProperty(otherColorID)) leftDebris->values[i]->SetColor(otherColorID, leftColor);
+                        rightDebris->values[i]->SetColor(colorID, rightColor);
+                        if (rightDebris->values[i]->HasProperty(otherColorID)) rightDebris->values[i]->SetColor(otherColorID, leftColor);
                     }
                 }
                 return;
@@ -581,6 +594,15 @@ namespace RainbowMod
             getManagerLogger().info("cache pointer %p", (*cache));
             cached = true;
             SetColorOnRenderers(obj, cache);
+        }
+    }
+
+    void RainbowManager::OnDisable()
+    {
+        if (isMaster)
+        {
+            hasMaster = false;
+            isMaster = false;
         }
     }
 

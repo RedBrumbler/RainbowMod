@@ -18,6 +18,7 @@
 DECLARE_CLASS_CODEGEN(RainbowMod, RainbowManager, UnityEngine::MonoBehaviour,
     DECLARE_METHOD(void, Update);
     DECLARE_METHOD(void, Awake);
+    DECLARE_METHOD(void, OnDisable);
     DECLARE_METHOD(void, SetSaberColor);
     DECLARE_METHOD(void, SetWallColor);
     DECLARE_METHOD(void, SetNoteColor);
@@ -65,6 +66,7 @@ DECLARE_CLASS_CODEGEN(RainbowMod, RainbowManager, UnityEngine::MonoBehaviour,
     REGISTER_FUNCTION(RainbowManager,
         REGISTER_METHOD(Update);
         REGISTER_METHOD(Awake);
+        REGISTER_METHOD(OnDisable);
         REGISTER_METHOD(SetSaberColor);
         REGISTER_METHOD(SetQSaberColor);
         REGISTER_METHOD(SetDebrisColor);

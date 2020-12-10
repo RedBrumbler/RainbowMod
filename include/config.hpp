@@ -22,6 +22,7 @@ typedef struct _Config_t {
     double BoostValue = 1.0f;
     double BoostSaturation = 0.7f;
     double WallsSpeed = 2.0;
+    int RainbowSetMod = 5;
 } config_t;
 
 void SaveConfig();
